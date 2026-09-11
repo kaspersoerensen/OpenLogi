@@ -15,6 +15,7 @@ pub mod controls;
 pub mod dpi;
 pub mod features;
 pub mod lighting;
+pub mod presenter;
 pub mod smartshift;
 pub mod wheel;
 
@@ -34,6 +35,9 @@ pub enum DiagCmd {
     Lighting(lighting::LightingArgs),
     /// Read or set the HID++ 0x2121 wheel reporting resolution.
     Wheel(wheel::WheelArgs),
+    /// Watch the Spotlight presenter button's hold/release edges (passive
+    /// plain-HID tap, not `0x1b04` divert).
+    Presenter(presenter::PresenterArgs),
 }
 
 impl DiagCmd {
@@ -46,6 +50,7 @@ impl DiagCmd {
             Self::Smartshift(args) => smartshift::run(args).await,
             Self::Lighting(args) => lighting::run(args).await,
             Self::Wheel(args) => wheel::run(args).await,
+            Self::Presenter(args) => presenter::run(args).await,
         }
     }
 }
