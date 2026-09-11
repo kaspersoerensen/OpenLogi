@@ -35,6 +35,7 @@ use crate::capture_plan::{
     DeviceCapturePlan, SharedCapturePlans, hidpp_side_gesture_maps_for, plan_for_device,
 };
 use crate::hardware::{DeviceOp, HardwareContext};
+use crate::highlight::HighlightSession;
 use crate::observable::ObservableState;
 use crate::receiver_access::ReceiverAccess;
 use crate::runtime::hook::{HookMaps, SharedHookMaps};
@@ -111,6 +112,9 @@ pub struct SharedRuntime {
     pub receiver_access: ReceiverAccess,
     /// Keyboard → pointing-device routes resolved from `config.toml`.
     pub host_switch_links: HostSwitchLinks,
+    /// Agent-owned on/off state for the Spotlight's on-screen presenter
+    /// highlight, flipped by `watchers::presenter` on each toggle press.
+    pub highlight: Arc<HighlightSession>,
 }
 
 impl SharedRuntime {
@@ -254,6 +258,7 @@ impl Orchestrator {
             capture_rearm_generation: Arc::new(AtomicU64::new(0)),
             receiver_access: ReceiverAccess::default(),
             host_switch_links,
+            highlight: Arc::new(HighlightSession::default()),
         };
         let orch = Self {
             config,

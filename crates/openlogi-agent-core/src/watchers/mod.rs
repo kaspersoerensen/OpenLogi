@@ -13,4 +13,5 @@ pub mod inventory;
 pub mod keyboard;
 pub mod pairing;
 mod poll;
+pub mod presenter;
 pub mod shutdown;

@@ -169,17 +169,22 @@ impl InputServices {
     }
 }
 
-/// Graceful-shutdown handles for the three firmware-owning HID++ managers.
+/// Graceful-shutdown handles for the three firmware-owning HID++ managers,
+/// plus the presenter tap, which owns no firmware state at all (see
+/// `openlogi_hid::presenter_tap`'s docs) and so needs no graceful stop —
+/// aborting it is exactly as clean as letting it run.
 pub(crate) struct HidppWatcherHandles {
     gesture: WatcherHandle,
     host_switch: WatcherHandle,
     keyboard: WatcherHandle,
+    presenter: tokio::task::JoinHandle<()>,
 }
 
 impl HidppWatcherHandles {
     /// Stop all managers concurrently and confirm firmware teardown. The
     /// lifecycle retains this future and owns the terminal-exit deadline.
     pub(crate) async fn stop_and_wait(self) -> bool {
+        self.presenter.abort();
         let (gesture, host_switch, keyboard) = tokio::join!(
             self.gesture.stop_and_wait("gesture"),
             self.host_switch.stop_and_wait("host-switch"),
@@ -223,10 +228,13 @@ pub(crate) fn spawn_hidpp_watchers(
         shared.device_io.clone(),
         inputs.dispatcher.clone(),
     );
+    let presenter =
+        watchers::presenter::spawn(shared.capture_plans.clone(), shared.highlight.clone());
     HidppWatcherHandles {
         gesture,
         host_switch,
         keyboard,
+        presenter,
     }
 }
 
