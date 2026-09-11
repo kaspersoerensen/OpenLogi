@@ -23,6 +23,7 @@ pub mod backend;
 pub mod backlight;
 pub mod inventory;
 pub mod pairing;
+pub mod presenter;
 pub mod replay;
 pub mod reprog_controls;
 pub mod session;
