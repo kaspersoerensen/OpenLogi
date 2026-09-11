@@ -187,6 +187,27 @@ pub enum Action {
     /// cancellation and shutdown. Dispatchers without a release context must
     /// degrade this action to a balanced tap rather than leave keys held.
     HoldShortcut(KeyCombo),
+    /// Show or hide an on-screen highlight around the pointer — the Logitech
+    /// Spotlight's "digital laser pointer" effect — flipping each time the
+    /// bound button is pressed, the same on/off shape as
+    /// [`Action::ToggleSmartShift`]. Not hold-triggered: the Spotlight gives
+    /// no reliable signal for "still held, not moving" over Bluetooth LE (see
+    /// `openlogi_device::presenter`'s docs for the hardware investigation),
+    /// so a discrete toggle sidesteps that entirely instead of approximating
+    /// it. Agent-handled like [`Action::ShowActionsRing`]: the injector does
+    /// nothing (see [`Effect::AgentSide`](super::effect::Effect::AgentSide));
+    /// the agent flips the overlay on each press. Not offered in the general
+    /// action catalog — only the Spotlight's own presenter panel binds this.
+    ToggleHighlight(HighlightMode),
+}
+
+/// Which on-screen effect [`Action::ToggleHighlight`] shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum HighlightMode {
+    /// A bright ring follows the pointer with the rest of the screen dimmed.
+    Highlight,
+    /// The same bright ring, without dimming the rest of the screen.
+    Spotlight,
 }
 
 /// One step in a [`Action::Workflow`]. A workflow is a `Vec<WorkflowStep>`
@@ -314,6 +335,8 @@ macro_rules! derive_action_core {
                     Action::Workflow(steps) => format!("Workflow ({} steps)", steps.len()),
                     Action::OpenApplication(target) => format!("Open {}", target.display_name()),
                     Action::HoldShortcut(combo) => format!("Hold {}", combo.rendered_label()),
+                    Action::ToggleHighlight(HighlightMode::Highlight) => "Highlight".into(),
+                    Action::ToggleHighlight(HighlightMode::Spotlight) => "Spotlight".into(),
                 }
             }
 
@@ -333,7 +356,8 @@ macro_rules! derive_action_core {
                     | Action::RunShellCommand(_)
                     | Action::Workflow(_)
                     | Action::OpenApplication(_)
-                    | Action::HoldShortcut(_) => None,
+                    | Action::HoldShortcut(_)
+                    | Action::ToggleHighlight(_) => None,
                 }
             }
 
@@ -364,7 +388,7 @@ macro_rules! derive_action_core {
                     | Action::Workflow(_)
                     | Action::HoldShortcut(_) => Category::Editing,
                     Action::SetDpiPreset(_) => Category::Dpi,
-                    Action::OpenApplication(_) => Category::System,
+                    Action::OpenApplication(_) | Action::ToggleHighlight(_) => Category::System,
                 }
             }
 

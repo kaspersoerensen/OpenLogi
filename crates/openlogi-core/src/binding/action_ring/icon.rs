@@ -320,6 +320,11 @@ macro_rules! derive_action_icon {
                     | Action::HoldShortcut(_) => Self::Keyboard,
                     Action::RunAppleScript(_) | Action::RunShellCommand(_) => Self::Terminal,
                     Action::OpenApplication(_) => Self::Applications,
+                    // Not offered from the Actions Ring picker (Spotlight-only,
+                    // bound from its own presenter panel) — closest existing
+                    // glyph rather than a dedicated one for a variant no ring
+                    // slot can ever hold.
+                    Action::ToggleHighlight(_) => Self::Monitor,
                 }
             }
         }

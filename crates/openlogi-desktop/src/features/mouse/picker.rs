@@ -105,6 +105,10 @@ pub(crate) fn action_icon_path(action: &Action) -> &'static str {
             "action-icons/keyboard.svg"
         }
         Action::RunAppleScript(_) | Action::RunShellCommand(_) => "action-icons/terminal.svg",
+        // Not offered from this general picker (Spotlight-only, bound from
+        // its own presenter panel) — reuses the gesture click glyph rather
+        // than a dedicated one for a variant no general row ever renders.
+        Action::ToggleHighlight(_) => "action-icons/circle-dot.svg",
     }
 }
 

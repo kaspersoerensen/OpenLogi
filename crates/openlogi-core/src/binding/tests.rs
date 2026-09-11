@@ -105,6 +105,37 @@ fn power_user_actions_roundtrip_toml() {
 }
 
 #[test]
+fn toggle_highlight_excluded_from_catalog_and_roundtrips_toml() {
+    // Spotlight-only: never offered from the general mouse/keyboard picker,
+    // only from the presenter panel that binds it directly.
+    assert!(
+        Action::catalog()
+            .iter()
+            .all(|a| !matches!(a, Action::ToggleHighlight(_)))
+    );
+    assert_eq!(
+        Action::ToggleHighlight(HighlightMode::Highlight).label(),
+        "Highlight"
+    );
+    assert_eq!(
+        Action::ToggleHighlight(HighlightMode::Spotlight).label(),
+        "Spotlight"
+    );
+    assert_eq!(
+        Action::ToggleHighlight(HighlightMode::Highlight).category(),
+        Category::System
+    );
+    for action in [
+        Action::ToggleHighlight(HighlightMode::Highlight),
+        Action::ToggleHighlight(HighlightMode::Spotlight),
+    ] {
+        let toml = toml::to_string(&action).expect("serialize");
+        let back: Action = toml::from_str(&toml).expect("deserialize");
+        assert_eq!(action, back);
+    }
+}
+
+#[test]
 fn workflow_label_category_and_catalog_exclusion() {
     let wf = Action::Workflow(vec![
         WorkflowStep::TypeText("bite me".into()),
@@ -558,6 +589,20 @@ fn thumbwheel_defaults_match_normalised_native_direction() {
     );
 }
 
+#[test]
+fn presenter_highlight_button_is_scoped_to_the_spotlight_panel() {
+    // Unbound it stays exactly native (see `defaults.rs`); it's neither an
+    // OS-hook button (it's never visible to the CGEventTap/evdev hook — the
+    // Spotlight doesn't honor HID++ divert over BLE at all) nor a HID++
+    // gesture source (captured by a passive plain-HID tap instead), and it
+    // must not leak into the general mouse or keyboard trigger lists.
+    assert_eq!(default_binding(ButtonId::PresenterHighlight), Action::None);
+    assert!(!ButtonId::PresenterHighlight.is_os_hook_button());
+    assert!(!ButtonId::PresenterHighlight.is_hidpp_gesture_source());
+    assert!(!ButtonId::ALL.contains(&ButtonId::PresenterHighlight));
+    assert!(!ButtonId::KEYBOARD_KEYS.contains(&ButtonId::PresenterHighlight));
+}
+
 // ── Effect classification ─────────────────────────────────────────────────
 //
 // `Action::effect()` is the platform-neutral IR `openlogi-inject`'s three
@@ -611,13 +656,16 @@ fn power_user_and_device_side_actions_lower_to_the_expected_bucket() {
     let workflow = Action::Workflow(vec![]);
     assert_matches!(workflow.effect(), Effect::Script(Script::Workflow(&[])));
 
-    // DPI/SmartShift/the Actions Ring/OpenApplication are all handled above
-    // or beside the injector, never inside a backend's own dispatch.
+    // DPI/SmartShift/the Actions Ring/OpenApplication/the presenter highlight
+    // are all handled above or beside the injector, never inside a backend's
+    // own dispatch.
     for action in [
         Action::CycleDpiPresets,
         Action::SetDpiPreset(2),
         Action::ToggleSmartShift,
         Action::ShowActionsRing,
+        Action::ToggleHighlight(HighlightMode::Highlight),
+        Action::ToggleHighlight(HighlightMode::Spotlight),
     ] {
         assert_matches!(action.effect(), Effect::AgentSide);
     }

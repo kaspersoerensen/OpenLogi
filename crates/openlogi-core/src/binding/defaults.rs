@@ -83,6 +83,16 @@ pub fn default_binding(button: ButtonId) -> Action {
         | ButtonId::KeyMute
         | ButtonId::KeyVolumeDown
         | ButtonId::KeyVolumeUp => Action::None,
+        // Unbound, the Spotlight's presenter button stays exactly native
+        // (click + hold-to-point): the presenter tap session only runs while
+        // this binding leaves the default, mirroring how an unbound HID++
+        // control is never diverted (see `capture_plan`).
+        #[expect(
+            clippy::match_same_arms,
+            reason = "same None default as the keyboard-key arm above by coincidence, not \
+                      shared semantics — an unrelated device family with its own rationale"
+        )]
+        ButtonId::PresenterHighlight => Action::None,
     }
 }
 

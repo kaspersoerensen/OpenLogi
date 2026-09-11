@@ -73,10 +73,22 @@ pub enum ButtonId {
     /// Tilting the main wheel right — `0x1b04` CID `0x005d` ("Right Scroll"),
     /// Logi metadata slot `SLOT_NAME_RIGHT_SCROLL_BUTTON`. Counterpart to
     /// [`ButtonId::WheelTiltLeft`].
+    WheelTiltRight,
+    /// The Logitech Spotlight's front button — the same physical press that
+    /// natively clicks and, held, moves the pointer. Its click also toggles
+    /// the on-screen highlight (see
+    /// [`Action::ToggleHighlight`](crate::binding::Action::ToggleHighlight));
+    /// not diverted over HID++ (the Spotlight ignores `0x1b04` diversion on this
+    /// control over Bluetooth LE) and not visible to the OS hook either — the
+    /// toggle is detected by passively reading the device's own plain HID
+    /// mouse report; see `openlogi_device::presenter`. Kept out of
+    /// [`ButtonId::ALL`] and [`ButtonId::KEYBOARD_KEYS`]: it is offered only
+    /// from the Spotlight's own presenter panel, never the general mouse or
+    /// keyboard popovers.
     ///
     /// Declared last: the TOML config and any serialized form encode the
     /// variant identifier / index, so new buttons are append-only.
-    WheelTiltRight,
+    PresenterHighlight,
 }
 
 impl ButtonId {
@@ -166,6 +178,7 @@ impl ButtonId {
             ButtonId::KeyVolumeDown => "Volume Down Key",
             ButtonId::KeyVolumeUp => "Volume Up Key",
             ButtonId::HapticPanel => "Haptic Panel",
+            ButtonId::PresenterHighlight => "Highlight Button",
         }
     }
 
@@ -195,6 +208,7 @@ impl ButtonId {
             ButtonId::KeyVolumeDown => "keyboard.volume_down_key",
             ButtonId::KeyVolumeUp => "keyboard.volume_up_key",
             ButtonId::HapticPanel => "actions.haptic_panel",
+            ButtonId::PresenterHighlight => "actions.presenter_highlight_button",
         }
     }
 }
