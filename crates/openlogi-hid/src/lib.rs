@@ -18,6 +18,7 @@ mod transport;
 
 pub mod host;
 pub mod permissions;
+pub mod presenter_tap;
 pub mod probe_cache;
 pub mod recording;
 
