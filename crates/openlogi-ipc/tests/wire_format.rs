@@ -31,7 +31,7 @@ use std::fmt::Write;
 
 use bincode::Options;
 use openlogi_core::app::ForegroundApp;
-use openlogi_core::binding::{ActionRingIcon, ActionRingSlot};
+use openlogi_core::binding::{ActionRingIcon, ActionRingSlot, HighlightMode};
 use openlogi_core::config::{Lighting, ScrollResolution};
 use openlogi_core::device::{
     BatteryInfo, BatteryLevel, BatteryStatus, Capabilities, DeviceInventory, DeviceKind,
@@ -47,8 +47,9 @@ use openlogi_core::hid::{
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, ActionRingPresentation, AgentRequest,
     AgentSnapshot, AgentStatus, ClientKind, ConfigReloadError, ForegroundApps, FoundDevice,
-    Identity, InventoryHealth, MonitorEvent, Observation, PROTOCOL_VERSION, PairingCommandError,
-    PairingFailure, PairingPhase, PairingUpdate, RingObservation,
+    HighlightObservation, HighlightState, Identity, InventoryHealth, MonitorEvent, Observation,
+    PROTOCOL_VERSION, PairingCommandError, PairingFailure, PairingPhase, PairingUpdate,
+    RingObservation,
 };
 use succession::{Compat, Run};
 
@@ -102,7 +103,7 @@ fn representative_smartshift_status() -> SmartShiftStatus {
 /// that makes that visible in the same diff.
 #[test]
 fn protocol_version_is_pinned() {
-    assert_eq!(PROTOCOL_VERSION, 30);
+    assert_eq!(PROTOCOL_VERSION, 31);
 }
 
 #[test]
@@ -207,6 +208,7 @@ fn request_variant_order() {
         },
         "1902",
     );
+    assert_wire(&AgentRequest::ObserveHighlight { since: 7 }, "1c07");
 }
 
 #[test]
@@ -280,6 +282,34 @@ fn action_ring_types() {
     assert_wire(&ActionRingCommandError::SessionNotFound, "00");
     assert_wire(&ActionRingCommandError::SlotEmpty, "01");
     assert_wire(&HidppOperation::PlayHaptic, "0e");
+}
+
+#[test]
+fn highlight_types() {
+    assert_wire(&HighlightMode::Highlight, "00");
+    assert_wire(&HighlightMode::Spotlight, "01");
+    assert_wire(
+        &HighlightState {
+            mode: HighlightMode::Spotlight,
+        },
+        "01",
+    );
+    assert_wire(
+        &HighlightObservation {
+            generation: 5,
+            active: None,
+        },
+        "0500",
+    );
+    assert_wire(
+        &HighlightObservation {
+            generation: 5,
+            active: Some(HighlightState {
+                mode: HighlightMode::Highlight,
+            }),
+        },
+        "050100",
+    );
 }
 
 #[test]

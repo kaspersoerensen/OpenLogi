@@ -17,8 +17,8 @@ use openlogi_fixture::{
 };
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, Agent, AgentStatus, ClientKind,
-    ConfigReloadError, ForegroundApps, Generation, Identity, InventoryHealth, MonitorEvent,
-    Observation, PairingCommandError, PairingPhase, PairingUpdate, RingObservation,
+    ConfigReloadError, ForegroundApps, Generation, HighlightObservation, Identity, InventoryHealth,
+    MonitorEvent, Observation, PairingCommandError, PairingPhase, PairingUpdate, RingObservation,
 };
 use tarpc::context::Context as TarpcContext;
 use tarpc::server::{BaseChannel, Channel as _};
@@ -253,6 +253,10 @@ impl Agent for TestAgent {
 
     async fn observe_action_ring(self, _: TarpcContext, _since: Generation) -> RingObservation {
         unreachable!("profile capture must not inspect the Actions Ring")
+    }
+
+    async fn observe_highlight(self, _: TarpcContext, _since: Generation) -> HighlightObservation {
+        unreachable!("profile capture must not inspect the presenter highlight")
     }
 
     async fn declare_client(self, _: TarpcContext, kind: ClientKind) {
@@ -666,8 +670,14 @@ async fn protocol_mismatch_aborts_before_snapshot_or_output() {
         .expect_err("protocol mismatch must abort")
         .to_string();
 
-    assert!(error.contains("protocol v29"), "{error}");
-    assert!(error.contains("requires v30"), "{error}");
+    assert!(
+        error.contains(&format!("protocol v{}", PROTOCOL_VERSION - 1)),
+        "{error}"
+    );
+    assert!(
+        error.contains(&format!("requires v{PROTOCOL_VERSION}")),
+        "{error}"
+    );
     assert_eq!(*inspection.snapshots.lock().expect("snapshot lock"), 0);
     assert!(!output.exists());
 }

@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use openlogi_core::app::ForegroundApp;
-use openlogi_core::binding::{ActionRingIcon, ActionRingSlot};
+use openlogi_core::binding::{ActionRingIcon, ActionRingSlot, HighlightMode};
 use openlogi_core::config::Lighting;
 use openlogi_core::device::{DeviceInventory, StandaloneDevice};
 use openlogi_core::hid::{
@@ -62,7 +62,11 @@ pub use succession::Identity;
 /// v29: `Agent::declare_client` + [`ClientKind`] appended — typed demand for
 ///      the macOS dormancy gate.
 /// v30: `Agent::read_wheel` and `Agent::read_backlight` appended.
-pub const PROTOCOL_VERSION: u32 = 30;
+/// v31: `Action::ToggleHighlight` + `ButtonId::PresenterHighlight` appended
+///      for the Logitech Spotlight's on-screen presenter highlight;
+///      `Agent::observe_highlight` appended alongside it (see
+///      [`HighlightObservation`]).
+pub const PROTOCOL_VERSION: u32 = 31;
 
 /// Environment variable through which the agent hands a supervised helper the
 /// run token it will serve, so the helper knows which agent it belongs to
@@ -409,6 +413,28 @@ pub struct RingObservation {
     pub invocation: Option<ActionRingInvocation>,
 }
 
+/// The presenter highlight's on-screen state, when it is showing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HighlightState {
+    /// Which effect is showing.
+    pub mode: HighlightMode,
+}
+
+/// Whether the Logitech Spotlight's on-screen presenter highlight is
+/// currently showing, stamped with its generation.
+///
+/// Its own cell rather than a field of [`AgentSnapshot`], for the same reason
+/// as [`RingObservation`]: a different observer (the overlay) with a
+/// different, much narrower working set than the GUI's full device
+/// inventory.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HighlightObservation {
+    /// See [`Generation`]. Pass it back to the next [`Agent::observe_highlight`].
+    pub generation: Generation,
+    /// The showing effect, or `None` when hidden.
+    pub active: Option<HighlightState>,
+}
+
 /// Why an Actions Ring interaction command was rejected.
 ///
 /// Variants are append-only because this enum crosses bincode IPC.
@@ -565,4 +591,9 @@ pub trait Agent {
     async fn read_wheel(route: DeviceRoute) -> Result<ScrollWheelMode, WriteError>;
     /// Read the current keyboard-backlight state from `route`.
     async fn read_backlight(route: DeviceRoute) -> Result<BacklightState, WriteError>;
+    /// Block until the Logitech Spotlight's on-screen presenter highlight
+    /// differs from `since`, then return it. Same contract as
+    /// [`Agent::observe`] — whole state, hold window, `0` for "seen
+    /// nothing" — over the highlight's own cell.
+    async fn observe_highlight(since: Generation) -> HighlightObservation;
 }
