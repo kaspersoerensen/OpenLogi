@@ -25,8 +25,8 @@ use openlogi_hid::{
 use openlogi_ipc::transport;
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, Agent, AgentSnapshot, AgentStatus, ClientKind,
-    ConfigReloadError, Generation, Identity, MonitorEvent, Observation, PROTOCOL_VERSION,
-    PairingCommandError, PairingUpdate, RingObservation,
+    ConfigReloadError, Generation, HighlightObservation, Identity, MonitorEvent, Observation,
+    PROTOCOL_VERSION, PairingCommandError, PairingUpdate, RingObservation,
 };
 use succession::Compat;
 
@@ -233,6 +233,10 @@ impl Agent for AgentServer {
                 openlogi_hid::get_backlight_on(&c).await
             })
             .await
+    }
+
+    async fn observe_highlight(self, _: Context, since: Generation) -> HighlightObservation {
+        self.shared.highlight.observe(since).await
     }
 
     async fn request_accessibility_prompt(self, _: Context) {

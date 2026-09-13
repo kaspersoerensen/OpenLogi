@@ -60,9 +60,9 @@ use openlogi_hid::{
 use openlogi_ipc::transport;
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, Agent, AgentSnapshot, AgentStatus, ClientKind,
-    ConfigReloadError, ForegroundApps, FoundDevice, Generation, Identity, InventoryHealth,
-    MonitorEvent, OBSERVE_HOLD, Observation, PROTOCOL_VERSION, PairingCommandError, PairingFailure,
-    PairingPhase, PairingUpdate, RingObservation,
+    ConfigReloadError, ForegroundApps, FoundDevice, Generation, HighlightObservation, Identity,
+    InventoryHealth, MonitorEvent, OBSERVE_HOLD, Observation, PROTOCOL_VERSION,
+    PairingCommandError, PairingFailure, PairingPhase, PairingUpdate, RingObservation,
 };
 use succession::Compat;
 use tarpc::context::Context;
@@ -839,6 +839,17 @@ impl Agent for MockAgent {
     ) -> Result<BacklightState, WriteError> {
         let state = self.state.lock().await;
         profile_value(&state.settings_for(&route)?.backlight, &route, 0x1982).copied()
+    }
+
+    async fn observe_highlight(self, _: Context, _since: Generation) -> HighlightObservation {
+        // The mock scripts no presenter highlight, so it only ever has
+        // "hidden" to report — held for the window so an overlay polling it
+        // doesn't spin.
+        tokio::time::sleep(OBSERVE_HOLD).await;
+        HighlightObservation {
+            generation: 1,
+            active: None,
+        }
     }
 
     async fn request_accessibility_prompt(self, _: Context) {
